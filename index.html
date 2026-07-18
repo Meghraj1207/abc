@@ -130,7 +130,7 @@
     <button onclick="restartGame()">Restart</button>
     <button onclick="showStats()">Statistics</button>
     <button onclick="showLeaderboard()">Leaderboard</button>
-    <button id="shareBtn" style="display:none;" onclick="shareScore()">Copy Score</button>
+    <button id="shareBtn" style="display:none;" onclick="shareScore()">Flex Your Score</button>
   </div>
 </div>
 
@@ -558,7 +558,8 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 function shareScore() {
   const score = el.shareBtn.dataset.score;
-  const text = `I completed A-Z speed test!\n\n${score}\n\nCan you beat me?`;
+  const url = "https://meghraj1207.github.io/abc/"
+  const text = `I completed A-Z speed test!\n\n${score}\n\nCan you beat me?\n${url}\n click and beat me\`;
   
   if (navigator.share) {
     navigator.share({ title: 'A-Z Speed Test', text: text }).catch(console.error);
