@@ -84,8 +84,8 @@ let started=false;
 let startTime=0;
 let mistakes=0;
 
-const rightSound=new Audio("fahhhhh.mp3");
-const wrongSound=new Audio("Ye Le Meme.mp3");
+const correctSound=new Audio("fahhhhh.mp3");
+const incorrectSound=new Audio("Ye Le Meme.mp3");
 const finishSound=new Audio("screaming_chicken_loud.mp3");
 const miracle=new Audio("akshay_kumar_miracle.mp3");
 
@@ -105,6 +105,12 @@ function parseBestScore(value){
 
 let bestScore=parseBestScore(localStorage.getItem(BEST_SCORE_KEY));
 let bestName=localStorage.getItem(BEST_NAME_KEY)||"";
+if(bestScore===null){
+    localStorage.removeItem(BEST_SCORE_KEY);
+    if(!bestName.trim()){
+        localStorage.removeItem(BEST_NAME_KEY);
+    }
+}
 if(bestName.trim()==="") bestName="Anonymous";
 
 function playSound(sound){
@@ -161,7 +167,7 @@ function handleKey(key){
 
     if(key===alphabet[index]){
 
-        if(index!==25) playSound(wrongSound);
+        if(index!==25) playSound(correctSound);
 
         index++;
         render();
@@ -194,7 +200,7 @@ function handleKey(key){
 
     }else{
         mistakes++;
-        playSound(rightSound);
+        playSound(incorrectSound);
         result.innerHTML="Time: "+(started?((performance.now()-startTime)/1000).toFixed(3):"0.000")+" s<br>Mistakes: "+mistakes;
     }
 
