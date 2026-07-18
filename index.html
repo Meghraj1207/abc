@@ -208,16 +208,10 @@ function handleKey(key){
 }
 
 // Desktop
-document.addEventListener("keydown",(e)=>{
-    handleKey(e.key);
-});
+
 
 // Mobile
-mobileInput.addEventListener("beforeinput",(e)=>{
-    if(!e.data)return;
-    e.preventDefault();
-    handleKey(e.data);
-});
+
 
 mobileInput.addEventListener("input",()=>{
     mobileInput.value="";
