@@ -109,7 +109,9 @@ document.addEventListener("keydown",(e)=>{
     }
 
     if(key===alphabet[index]){
-        playSound(wrongSound);
+        if(index!=25){
+            playSound(wrongSound);
+        }
         index++;
         render();
 
