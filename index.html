@@ -97,8 +97,15 @@ const scorecardText=document.getElementById("scorecardText");
 const BEST_SCORE_KEY="az-speed-best-score";
 const BEST_NAME_KEY="az-speed-best-name";
 
-let bestScore=Number(localStorage.getItem(BEST_SCORE_KEY));
+function parseBestScore(value){
+    if(value===null || value===undefined || value==="") return null;
+    const score=Number(value);
+    return Number.isFinite(score)?score:null;
+}
+
+let bestScore=parseBestScore(localStorage.getItem(BEST_SCORE_KEY));
 let bestName=localStorage.getItem(BEST_NAME_KEY)||"";
+if(bestName.trim()==="") bestName="Anonymous";
 
 function playSound(sound){
     sound.pause();
@@ -118,10 +125,11 @@ function render(){
 }
 
 function updateScorecard(){
-    if(bestScore===null || !bestName){
+    if(bestScore===null || bestScore===undefined){
         scorecardText.textContent="No record yet";
     } else {
-        scorecardText.textContent=`${bestName} holds the fastest time at ${bestScore.toFixed(3)} s`;
+        const displayName=bestName.trim()||"Anonymous";
+        scorecardText.textContent=`${displayName} holds the fastest time at ${bestScore.toFixed(3)} s`;
     }
 }
 
