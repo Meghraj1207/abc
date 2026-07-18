@@ -100,7 +100,7 @@ const BEST_NAME_KEY="az-speed-best-name";
 function parseBestScore(value){
     if(value===null || value===undefined || value==="") return null;
     const score=Number(value);
-    return Number.isFinite(score)?score:null;
+    return Number.isFinite(score) && score>0 ? score : null;
 }
 
 let bestScore=parseBestScore(localStorage.getItem(BEST_SCORE_KEY));
