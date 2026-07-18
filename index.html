@@ -4,179 +4,537 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>A-Z Speed Test</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <style>
-body{
-    margin:0;
-    background:#111;
-    color:#fff;
-    font-family:Arial,sans-serif;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-    text-align:center;
-}
-.box{max-width:700px;padding:20px}
-#letters{font-size:32px;letter-spacing:3px;margin:20px 0;word-break:break-word}
-.current{color:#00ff66;text-decoration:underline}
-.done{color:#666}
-#result{font-size:24px;margin:20px 0}
-button{
-    padding:12px 22px;
-    font-size:18px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-}
-#mobileInput{
-    position:fixed;
-    left:-9999px;
-    opacity:0;
-    width:1px;
-    height:1px;
-}
+  :root {
+    --bg: #111;
+    --text: #fff;
+    --neon: #00ff66;
+    --neon-dim: #004411;
+    --error: #ff3333;
+    --gray: #666;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    text-align: center;
+    overflow-x: hidden;
+    transition: background-color 0.1s;
+  }
+  .container {
+    max-width: 600px;
+    width: 90%;
+    padding: 30px;
+    background: #1a1a1a;
+    border-radius: 16px;
+    box-shadow: 0 0 25px rgba(0, 255, 102, 0.1);
+    position: relative;
+  }
+  h1 { margin-top: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+  .stats-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin: 20px 0 10px; }
+  
+  .progress-container { width: 100%; background: var(--neon-dim); border-radius: 10px; overflow: hidden; margin-bottom: 20px; position: relative; height: 20px; }
+  .progress-bar { height: 100%; background: var(--neon); width: 0%; transition: width 0.1s linear; box-shadow: 0 0 10px var(--neon); }
+  .progress-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 14px; line-height: 20px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; }
+  
+  .combo-wpm { display: flex; justify-content: space-between; color: #ffa500; font-weight: bold; margin-bottom: 15px; font-size: 18px; }
+  
+  .current-letter { font-size: 100px; font-weight: bold; color: var(--neon); margin: 20px 0; text-shadow: 0 0 20px var(--neon); text-transform: uppercase; line-height: 1; }
+  .alphabet-display { font-size: 24px; letter-spacing: 4px; word-break: break-word; margin-bottom: 30px; color: var(--gray); font-family: monospace; }
+  .alphabet-display span.done { color: var(--neon); text-shadow: 0 0 5px var(--neon); }
+  .alphabet-display span.current-small { color: #fff; text-decoration: underline; font-weight: bold; }
+  
+  .bottom-info { font-size: 18px; margin-bottom: 20px; display: flex; justify-content: space-around; }
+  .rank-display { font-size: 22px; font-weight: bold; margin: 20px 0; color: #ffd700; line-height: 1.4; }
+  
+  .buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: 2px solid var(--neon);
+    background: transparent;
+    color: var(--neon);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  button:hover { background: var(--neon); color: var(--bg); box-shadow: 0 0 15px var(--neon); }
+  
+  /* Animations */
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-10px); }
+    100% { transform: translateX(0); }
+  }
+  .shake { animation: shake 0.2s; }
+  .flash-green { background-color: rgba(0, 255, 102, 0.2) !important; }
+  .flash-red { background-color: rgba(255, 51, 51, 0.2) !important; }
+  
+  #mobileInput { position: absolute; opacity: 0; pointer-events: none; }
+  
+  /* Modal */
+  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+  .modal-content { background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid var(--neon); box-shadow: 0 0 20px rgba(0,255,102,0.3); }
+  .modal h2 { margin-top: 0; color: var(--neon); }
+  .close-modal { margin-top: 20px; background: var(--neon); color: var(--bg); width: 100%; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; }
+  .stat-box { background: #333; padding: 10px; border-radius: 8px; }
+  .stat-value { font-size: 24px; font-weight: bold; color: var(--neon); }
+  .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+  
+  .graph-container { height: 100px; display: flex; align-items: flex-end; gap: 4px; margin-top: 20px; justify-content: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
+  .graph-bar { width: 10px; background: var(--neon); border-radius: 2px 2px 0 0; transition: height 0.3s; }
 </style>
 </head>
 <body>
 
-<div class="box">
-<h1>A → Z Speed Test</h1>
-<p>Tap anywhere, then press <b>A</b> to start.</p>
-
-<div id="letters"></div>
-
-<div id="result">
-Time: 0.000 s<br>
-Mistakes: 0
+<div class="container" id="gameContainer">
+  <h1>A → Z Speed Test</h1>
+  
+  <div class="stats-row">
+    <div id="timeDisplay">⏱ 0.000s</div>
+    <div id="accuracyDisplay">🎯 100%</div>
+  </div>
+  
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="progress-text" id="progressText">0%</div>
+  </div>
+  
+  <div class="combo-wpm">
+    <div id="comboDisplay">🔥 Combo x0</div>
+    <div id="wpmDisplay">⚡ 0 WPM</div>
+  </div>
+  
+  <div class="current-letter" id="currentLetter">A</div>
+  <div class="alphabet-display" id="alphabetDisplay"></div>
+  
+  <div class="bottom-info">
+    <div id="bestTimeDisplay">🏆 Best: --</div>
+    <div id="streakDisplay">🔥 Streak: 0</div>
+  </div>
+  
+  <div class="rank-display" id="rankDisplay">Press 'A' to start</div>
+  
+  <div class="buttons">
+    <button onclick="restartGame()">Restart</button>
+    <button onclick="showStats()">Statistics</button>
+    <button onclick="showLeaderboard()">Leaderboard</button>
+    <button id="shareBtn" style="display:none;" onclick="shareScore()">Copy Score</button>
+  </div>
 </div>
 
-<button onclick="restartGame()">Restart</button>
-
-<p>Desktop: Press Enter to restart.</p>
+<!-- Statistics Modal -->
+<div class="modal" id="statsModal">
+  <div class="modal-content">
+    <h2>🏅 Player Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-value" id="sGames">0</div><div class="stat-label">Games Played</div></div>
+      <div class="stat-box"><div class="stat-value" id="sAvg">0.00</div><div class="stat-label">Average (s)</div></div>
+      <div class="stat-box"><div class="stat-value" id="sBest">--</div><div class="stat-label">Best Time (s)</div></div>
+      <div class="stat-box"><div class="stat-value" id="sWorst">--</div><div class="stat-label">Worst Time (s)</div></div>
+      <div class="stat-box"><div class="stat-value" id="sAcc">100%</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat-box"><div class="stat-value" id="sLetters">0</div><div class="stat-label">Total Letters</div></div>
+    </div>
+    <button class="close-modal" onclick="closeModal('statsModal')">Close</button>
+  </div>
 </div>
 
-<input id="mobileInput"
-autocomplete="off"
-autocorrect="off"
-autocapitalize="off"
-spellcheck="false"
-inputmode="text">
+<!-- Leaderboard Modal -->
+<div class="modal" id="leaderboardModal">
+  <div class="modal-content">
+    <h2>🏆 Local Leaderboard</h2>
+    <div id="leaderboardList" style="text-align: left; margin: 15px 0; font-size: 18px; line-height: 1.6;"></div>
+    <button class="close-modal" onclick="closeModal('leaderboardModal')">Close</button>
+  </div>
+</div>
+
+<!-- Graph Modal -->
+<div class="modal" id="graphModal">
+  <div class="modal-content">
+    <h2>⌨️ Typing Speed Graph</h2>
+    <p style="font-size: 12px; color: #aaa;">Time taken per letter (lower is better, green is fast, red is slow)</p>
+    <div class="graph-container" id="speedGraph"></div>
+    <button class="close-modal" onclick="closeModal('graphModal')">Close</button>
+  </div>
+</div>
+
+<input id="mobileInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text">
 
 <script>
-const alphabet="abcdefghijklmnopqrstuvwxyz".split("");
+// --- State & Settings ---
+const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+let index = 0;
+let started = false;
+let startTime = 0;
+let mistakes = 0;
+let combo = 0;
+let maxCombo = 0;
+let timerInterval;
+let letterTimes = [];
+let lastLetterTime = 0;
 
-let index=0;
-let started=false;
-let startTime=0;
-let mistakes=0;
-
-const rightSound=new Audio("fahhhhh.mp3");
-const wrongSound=new Audio("Ye Le Meme.mp3");
-const finishSound=new Audio("screaming_chicken_loud.mp3");
-const miracle=new Audio("akshay_kumar_miracle.mp3");
-
-const letters=document.getElementById("letters");
-const result=document.getElementById("result");
-const mobileInput=document.getElementById("mobileInput");
-
-function playSound(sound){
-    sound.pause();
-    sound.currentTime=0;
-    sound.play().catch(()=>{});
+// Sounds generator fallback (in case audio files aren't attached)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(freq, type, duration, vol=0.1) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+  osc.stop(audioCtx.currentTime + duration);
 }
 
-function render(){
-    letters.innerHTML="";
-    alphabet.forEach((c,i)=>{
-        const s=document.createElement("span");
-        s.textContent=c+" ";
-        if(i<index)s.className="done";
-        else if(i===index)s.className="current";
-        letters.appendChild(s);
+const sounds = {
+  right: () => playBeep(600, 'sine', 0.1, 0.05),
+  wrong: () => playBeep(200, 'sawtooth', 0.3, 0.1),
+  finish: () => playBeep(800, 'square', 0.5, 0.1)
+};
+
+// --- DOM Elements ---
+const el = {
+  time: document.getElementById('timeDisplay'),
+  acc: document.getElementById('accuracyDisplay'),
+  progBar: document.getElementById('progressBar'),
+  progText: document.getElementById('progressText'),
+  combo: document.getElementById('comboDisplay'),
+  wpm: document.getElementById('wpmDisplay'),
+  currLet: document.getElementById('currentLetter'),
+  alphaDisp: document.getElementById('alphabetDisplay'),
+  best: document.getElementById('bestTimeDisplay'),
+  streak: document.getElementById('streakDisplay'),
+  rank: document.getElementById('rankDisplay'),
+  container: document.getElementById('gameContainer'),
+  shareBtn: document.getElementById('shareBtn'),
+  input: document.getElementById('mobileInput')
+};
+
+// --- LocalStorage Stats ---
+let stats = JSON.parse(localStorage.getItem('azStats')) || {
+  games: 0,
+  totalTime: 0,
+  best: Infinity,
+  worst: 0,
+  totalLetters: 0,
+  totalMistakes: 0,
+  streak: 0,
+  leaderboard: []
+};
+
+function saveStats() { localStorage.setItem('azStats', JSON.stringify(stats)); }
+
+function init() {
+  updateBestDisplay();
+  el.streak.innerText = `🔥 Streak: ${stats.streak}`;
+  renderAlphabet();
+}
+
+function renderAlphabet() {
+  let html = "";
+  alphabet.forEach((c, i) => {
+    if (i < index) html += `<span class="done">${c}</span> `;
+    else if (i === index) html += `<span class="current-small">${c}</span> `;
+    else html += `<span>${c}</span> `;
+  });
+  el.alphaDisp.innerHTML = html.trim();
+  el.currLet.innerText = alphabet[index] ? alphabet[index].toUpperCase() : "🎉";
+}
+
+function updateBestDisplay() {
+  el.best.innerText = stats.best === Infinity ? "🏆 Best: --" : `🏆 Best: ${stats.best.toFixed(3)}s`;
+}
+
+function getRank(time) {
+  if (time < 4) return "👑 Keyboard God";
+  if (time < 5) return "🔥 Legend";
+  if (time < 6) return "🥇 Pro";
+  if (time < 7) return "🥈 Expert";
+  if (time < 8) return "🥉 Good";
+  if (time < 10) return "🙂 Average";
+  return "🐢 Beginner";
+}
+
+function getMessage(time) {
+  if (time < 4) return "ARE YOU HUMAN? 🤖";
+  if (time < 5) return "Keyboard Monster! 🔥";
+  if (time < 6) return "Lightning Fingers! ⚡";
+  if (time < 7) return "Nice speed! 😎";
+  if (time < 10) return "Keep practicing! 💪";
+  return "Grandma Mode Activated 🐢";
+}
+
+function flashScreen(type) {
+  document.body.classList.add(`flash-${type}`);
+  setTimeout(() => document.body.classList.remove(`flash-${type}`), 100);
+}
+
+function shakeContainer() {
+  el.container.classList.remove('shake');
+  void el.container.offsetWidth;
+  el.container.classList.add('shake');
+}
+
+function startTimer() {
+  started = true;
+  startTime = performance.now();
+  lastLetterTime = startTime;
+  timerInterval = requestAnimationFrame(updateTimer);
+}
+
+function updateTimer() {
+  if (!started) return;
+  const now = performance.now();
+  const time = ((now - startTime) / 1000).toFixed(3);
+  el.time.innerText = `⏱ ${time}s`;
+  
+  // Approximate WPM (assume 26 chars = ~5.2 words)
+  const wpm = Math.round((5.2 / (now - startTime) * 1000) * 60) || 0;
+  if(wpm > 0 && wpm < 1500) el.wpm.innerText = `⚡ ${wpm} WPM`;
+  
+  timerInterval = requestAnimationFrame(updateTimer);
+}
+
+function restartGame() {
+  cancelAnimationFrame(timerInterval);
+  index = 0;
+  started = false;
+  mistakes = 0;
+  combo = 0;
+  maxCombo = 0;
+  letterTimes = [];
+  
+  el.time.innerText = "⏱ 0.000s";
+  el.acc.innerText = "🎯 100%";
+  el.progBar.style.width = "0%";
+  el.progText.innerText = "0%";
+  el.combo.innerText = "🔥 Combo x0";
+  el.wpm.innerText = "⚡ 0 WPM";
+  el.rank.innerText = "Press 'A' to start";
+  el.shareBtn.style.display = "none";
+  
+  renderAlphabet();
+  el.input.value = "";
+  el.input.focus();
+}
+
+function endGame() {
+  started = false;
+  cancelAnimationFrame(timerInterval);
+  
+  const finalTime = (performance.now() - startTime) / 1000;
+  const acc = Math.round((26 / (26 + mistakes)) * 100);
+  
+  // Update Stats
+  stats.games++;
+  stats.totalTime += finalTime;
+  stats.totalLetters += 26;
+  stats.totalMistakes += mistakes;
+  if (finalTime > stats.worst) stats.worst = finalTime;
+  
+  let isNewBest = false;
+  if (finalTime < stats.best) {
+    stats.best = finalTime;
+    isNewBest = true;
+  }
+  
+  if (mistakes === 0) stats.streak++;
+  else stats.streak = 0;
+  
+  // Leaderboard
+  stats.leaderboard.push({ time: finalTime, date: new Date().toLocaleDateString() });
+  stats.leaderboard.sort((a, b) => a.time - b.time);
+  stats.leaderboard = stats.leaderboard.slice(0, 10);
+  
+  saveStats();
+  updateBestDisplay();
+  el.streak.innerText = `🔥 Streak: ${stats.streak}`;
+  
+  const rank = getRank(finalTime);
+  el.rank.innerHTML = `${rank}<br><span style="font-size:16px;color:#aaa">${getMessage(finalTime)}</span>`;
+  
+  if (isNewBest) {
+    el.rank.innerHTML = `<span style="color:#00ff66">🎉 NEW PERSONAL BEST! 🎉</span><br>` + el.rank.innerHTML;
+  }
+  
+  el.shareBtn.style.display = "inline-block";
+  el.shareBtn.dataset.score = `${finalTime.toFixed(3)} sec\n${mistakes} mistakes\nAccuracy ${acc}%\nRank: ${rank}`;
+  
+  sounds.finish();
+  
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#00ff66', '#ffffff', '#ff3333']
     });
+  }
+  
+  setTimeout(() => showGraph(), 1000);
 }
 
-function restartGame(){
-    index=0;
-    started=false;
-    mistakes=0;
-    result.innerHTML="Time: 0.000 s<br>Mistakes: 0";
-    render();
-    mobileInput.value="";
-    mobileInput.focus();
+function handleKey(key) {
+  key = key.toLowerCase();
+  if (key === "enter") { restartGame(); return; }
+  if (key.length !== 1 || key < 'a' || key > 'z') return;
+
+  if (!started) {
+    if (key !== "a") return;
+    startTimer();
+  }
+
+  if (key === alphabet[index]) {
+    // Correct
+    const now = performance.now();
+    letterTimes.push(now - lastLetterTime);
+    lastLetterTime = now;
+    
+    index++;
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+    
+    flashScreen('green');
+    if (index !== 26) sounds.right();
+    
+    // Update UI
+    const pct = Math.round((index / 26) * 100);
+    el.progBar.style.width = `${pct}%`;
+    el.progText.innerText = `${pct}%`;
+    el.combo.innerText = `🔥 Combo x${combo}`;
+    
+    renderAlphabet();
+    
+    if (index === 26) {
+      endGame();
+    }
+  } else {
+    // Wrong
+    mistakes++;
+    stats.totalMistakes++;
+    combo = 0;
+    
+    shakeContainer();
+    flashScreen('red');
+    sounds.wrong();
+    
+    el.combo.innerText = `🔥 Combo x0`;
+  }
+  
+  // Update Accuracy
+  if (index > 0 || mistakes > 0) {
+    const acc = Math.round((index / (index + mistakes)) * 100);
+    el.acc.innerText = `🎯 ${acc}%`;
+  }
+  
+  el.input.focus();
 }
 
-function handleKey(key){
-    key=key.toLowerCase();
-
-    if(key==="enter"){
-        restartGame();
-        return;
-    }
-
-    if(key.length!==1 || key<'a' || key>'z') return;
-
-    if(!started){
-        if(key!=="a") return;
-        started=true;
-        startTime=performance.now();
-    }
-
-    if(key===alphabet[index]){
-
-        if(index!==25) playSound(wrongSound);
-
-        index++;
-        render();
-
-        if(index===26){
-            const time=((performance.now()-startTime)/1000).toFixed(3);
-
-            if(mistakes===0) playSound(miracle);
-            else playSound(finishSound);
-
-            result.innerHTML=
-            "🎉 Finished!<br>Time: <b>"+time+
-            "</b> seconds<br>Mistakes: <b>"+mistakes+"</b>";
-
-            started=false;
-        }
-
-    }else{
-        mistakes++;
-        playSound(rightSound);
-        result.innerHTML="Time: "+(started?((performance.now()-startTime)/1000).toFixed(3):"0.000")+" s<br>Mistakes: "+mistakes;
-    }
-
-    mobileInput.focus();
-}
-
+// Input Handling
 const isTouch = navigator.maxTouchPoints > 0;
-
 if (isTouch) {
-    mobileInput.addEventListener("beforeinput", (e) => {
-        if (!e.data) return;
-        e.preventDefault();
-        handleKey(e.data);
-    });
+  el.input.addEventListener("beforeinput", (e) => {
+    if (!e.data) return;
+    e.preventDefault();
+    handleKey(e.data);
+  });
 } else {
-    document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", (e) => {
+    if(!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
         handleKey(e.key);
+    } else if (e.key === "Enter") {
+        handleKey(e.key);
+    }
+  });
+}
+
+el.input.addEventListener("input", () => { el.input.value = ""; });
+function activate() { el.input.focus(); }
+document.addEventListener("touchstart", activate, {passive: true});
+document.addEventListener("click", activate);
+
+// Modals
+function showStats() {
+  document.getElementById('sGames').innerText = stats.games;
+  document.getElementById('sAvg').innerText = stats.games > 0 ? (stats.totalTime / stats.games).toFixed(3) : "0.00";
+  document.getElementById('sBest').innerText = stats.best === Infinity ? "--" : stats.best.toFixed(3);
+  document.getElementById('sWorst').innerText = stats.worst === 0 ? "--" : stats.worst.toFixed(3);
+  
+  const acc = stats.totalLetters > 0 ? Math.round((stats.totalLetters / (stats.totalLetters + stats.totalMistakes)) * 100) : 100;
+  document.getElementById('sAcc').innerText = `${acc}%`;
+  document.getElementById('sLetters').innerText = stats.totalLetters;
+  
+  document.getElementById('statsModal').style.display = 'flex';
+}
+
+function showLeaderboard() {
+  const list = document.getElementById('leaderboardList');
+  if (stats.leaderboard.length === 0) {
+    list.innerHTML = "<p>No games played yet!</p>";
+  } else {
+    const medals = ['🥇', '🥈', '🥉'];
+    list.innerHTML = stats.leaderboard.map((entry, i) => {
+      const medal = i < 3 ? medals[i] : `${i+1}.`;
+      return `<div>${medal} <b style="color:var(--neon)">${entry.time.toFixed(3)}s</b> <span style="font-size:12px;color:#888">(${entry.date})</span></div>`;
+    }).join('');
+  }
+  document.getElementById('leaderboardModal').style.display = 'flex';
+}
+
+function showGraph() {
+  if(letterTimes.length === 0) return;
+  const container = document.getElementById('speedGraph');
+  container.innerHTML = '';
+  
+  const maxTime = Math.max(...letterTimes);
+  
+  letterTimes.forEach(time => {
+    const height = Math.max(10, (time / maxTime) * 100); 
+    const bar = document.createElement('div');
+    bar.className = 'graph-bar';
+    bar.style.height = `${height}px`;
+    
+    if(time > 400) bar.style.background = '#ff3333';
+    else if(time > 200) bar.style.background = '#ffd700';
+    
+    container.appendChild(bar);
+  });
+  
+  document.getElementById('graphModal').style.display = 'flex';
+}
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function shareScore() {
+  const score = el.shareBtn.dataset.score;
+  const text = `I completed A-Z speed test!\n\n${score}\n\nCan you beat me?`;
+  
+  if (navigator.share) {
+    navigator.share({ title: 'A-Z Speed Test', text: text }).catch(console.error);
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = el.shareBtn.innerText;
+      el.shareBtn.innerText = "Copied!";
+      setTimeout(() => el.shareBtn.innerText = orig, 2000);
     });
+  }
 }
 
-mobileInput.addEventListener("input",()=>{
-    mobileInput.value="";
-});
-
-// One tap required by browsers
-function activate(){
-    mobileInput.focus();
-}
-document.addEventListener("touchstart",activate,{passive:true});
-document.addEventListener("click",activate);
-
-render();
+// Initial setup
+init();
 </script>
 
 </body>
