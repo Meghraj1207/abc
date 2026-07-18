@@ -134,6 +134,16 @@
   </div>
 </div>
 
+<!-- Name Entry Modal -->
+<div class="modal" id="nameModal">
+  <div class="modal-content">
+    <h2>🎉 New Score!</h2>
+    <p>Enter your name for the leaderboard:</p>
+    <input type="text" id="playerNameInput" placeholder="Your Name" style="width: 100%; padding: 12px; margin-bottom: 15px; font-size: 18px; border-radius: 8px; border: 1px solid var(--neon); background: #333; color: white; box-sizing: border-box; outline: none; text-align: center;">
+    <button onclick="saveScoreWithName()" style="width: 100%; background: var(--neon); color: var(--bg);">Save Score</button>
+  </div>
+</div>
+
 <!-- Statistics Modal -->
 <div class="modal" id="statsModal">
   <div class="modal-content">
@@ -183,27 +193,18 @@ let maxCombo = 0;
 let timerInterval;
 let letterTimes = [];
 let lastLetterTime = 0;
+let pendingScore = null;
 
-// Sounds generator fallback (in case audio files aren't attached)
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playBeep(freq, type, duration, vol=0.1) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-  osc.stop(audioCtx.currentTime + duration);
+const rightSound = new Audio("fahhhhh.mp3");
+const wrongSound = new Audio("Ye Le Meme.mp3");
+const finishSound = new Audio("screaming_chicken_loud.mp3");
+const miracle = new Audio("akshay_kumar_miracle.mp3");
+
+function playSound(sound) {
+    sound.pause();
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
 }
-
-const sounds = {
-  right: () => playBeep(600, 'sine', 0.1, 0.05),
-  wrong: () => playBeep(200, 'sawtooth', 0.3, 0.1),
-  finish: () => playBeep(800, 'square', 0.5, 0.1)
-};
 
 // --- DOM Elements ---
 const el = {
@@ -232,7 +233,8 @@ let stats = JSON.parse(localStorage.getItem('azStats')) || {
   totalLetters: 0,
   totalMistakes: 0,
   streak: 0,
-  leaderboard: []
+  leaderboard: [],
+  lastName: ""
 };
 
 function saveStats() { localStorage.setItem('azStats', JSON.stringify(stats)); }
@@ -338,6 +340,9 @@ function endGame() {
   const finalTime = (performance.now() - startTime) / 1000;
   const acc = Math.round((26 / (26 + mistakes)) * 100);
   
+  if(mistakes === 0) playSound(miracle);
+  else playSound(finishSound);
+  
   // Update Stats
   stats.games++;
   stats.totalTime += finalTime;
@@ -354,11 +359,6 @@ function endGame() {
   if (mistakes === 0) stats.streak++;
   else stats.streak = 0;
   
-  // Leaderboard
-  stats.leaderboard.push({ time: finalTime, date: new Date().toLocaleDateString() });
-  stats.leaderboard.sort((a, b) => a.time - b.time);
-  stats.leaderboard = stats.leaderboard.slice(0, 10);
-  
   saveStats();
   updateBestDisplay();
   el.streak.innerText = `🔥 Streak: ${stats.streak}`;
@@ -373,8 +373,6 @@ function endGame() {
   el.shareBtn.style.display = "inline-block";
   el.shareBtn.dataset.score = `${finalTime.toFixed(3)} sec\n${mistakes} mistakes\nAccuracy ${acc}%\nRank: ${rank}`;
   
-  sounds.finish();
-  
   if (typeof confetti === 'function') {
     confetti({
       particleCount: 150,
@@ -384,11 +382,42 @@ function endGame() {
     });
   }
   
-  setTimeout(() => showGraph(), 1000);
+  // Save for leaderboard modal
+  pendingScore = { time: finalTime, date: new Date().toLocaleDateString() };
+  
+  setTimeout(() => {
+    document.getElementById('playerNameInput').value = stats.lastName || "";
+    document.getElementById('nameModal').style.display = 'flex';
+    document.getElementById('playerNameInput').focus();
+  }, 1000); // Give user a second to enjoy confetti
 }
+
+function saveScoreWithName() {
+  const nameInput = document.getElementById('playerNameInput').value.trim() || "Anonymous";
+  stats.lastName = nameInput;
+  
+  stats.leaderboard.push({ name: nameInput, time: pendingScore.time, date: pendingScore.date });
+  stats.leaderboard.sort((a, b) => a.time - b.time);
+  stats.leaderboard = stats.leaderboard.slice(0, 10);
+  saveStats();
+  
+  document.getElementById('nameModal').style.display = 'none';
+  showGraph();
+}
+
+// Allow pressing Enter to submit name
+document.getElementById('playerNameInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    saveScoreWithName();
+  }
+});
 
 function handleKey(key) {
   key = key.toLowerCase();
+  
+  // Prevent inputs from bleeding into game if modal is open
+  if (document.getElementById('nameModal').style.display === 'flex') return;
+
   if (key === "enter") { restartGame(); return; }
   if (key.length !== 1 || key < 'a' || key > 'z') return;
 
@@ -408,7 +437,7 @@ function handleKey(key) {
     if (combo > maxCombo) maxCombo = combo;
     
     flashScreen('green');
-    if (index !== 26) sounds.right();
+    if (index !== 26) playSound(rightSound);
     
     // Update UI
     const pct = Math.round((index / 26) * 100);
@@ -429,7 +458,7 @@ function handleKey(key) {
     
     shakeContainer();
     flashScreen('red');
-    sounds.wrong();
+    playSound(wrongSound);
     
     el.combo.innerText = `🔥 Combo x0`;
   }
@@ -453,6 +482,7 @@ if (isTouch) {
   });
 } else {
   document.addEventListener("keydown", (e) => {
+    if (document.getElementById('nameModal').style.display === 'flex') return;
     if(!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
         handleKey(e.key);
     } else if (e.key === "Enter") {
@@ -462,7 +492,11 @@ if (isTouch) {
 }
 
 el.input.addEventListener("input", () => { el.input.value = ""; });
-function activate() { el.input.focus(); }
+function activate() { 
+  if (document.getElementById('nameModal').style.display !== 'flex') {
+    el.input.focus(); 
+  }
+}
 document.addEventListener("touchstart", activate, {passive: true});
 document.addEventListener("click", activate);
 
@@ -487,8 +521,12 @@ function showLeaderboard() {
   } else {
     const medals = ['🥇', '🥈', '🥉'];
     list.innerHTML = stats.leaderboard.map((entry, i) => {
-      const medal = i < 3 ? medals[i] : `${i+1}.`;
-      return `<div>${medal} <b style="color:var(--neon)">${entry.time.toFixed(3)}s</b> <span style="font-size:12px;color:#888">(${entry.date})</span></div>`;
+      const medal = i < 3 ? medals[i] : `<span style="display:inline-block;width:24px">${i+1}.</span>`;
+      const name = entry.name || "Anonymous";
+      return `<div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom: 1px solid #333; padding-bottom: 5px;">
+                <span>${medal} <b>${name}</b></span>
+                <span><b style="color:var(--neon)">${entry.time.toFixed(3)}s</b></span>
+              </div>`;
     }).join('');
   }
   document.getElementById('leaderboardModal').style.display = 'flex';
