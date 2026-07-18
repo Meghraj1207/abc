@@ -21,6 +21,15 @@ body{
 .current{color:#00ff66;text-decoration:underline}
 .done{color:#666}
 #result{font-size:24px;margin:20px 0}
+.scorecard{
+    margin:20px 0;
+    padding:14px;
+    border:1px solid #2d2d2d;
+    border-radius:10px;
+    background:#1a1a1a;
+}
+.scorecard h3{margin:0 0 8px;font-size:20px}
+.scorecard p{margin:0;font-size:16px;color:#ddd}
 button{
     padding:12px 22px;
     font-size:18px;
@@ -48,6 +57,11 @@ button{
 <div id="result">
 Time: 0.000 s<br>
 Mistakes: 0
+</div>
+
+<div class="scorecard">
+<h3>Fastest Fingers</h3>
+<p id="scorecardText">No record yet</p>
 </div>
 
 <button onclick="restartGame()">Restart</button>
@@ -78,6 +92,13 @@ const miracle=new Audio("akshay_kumar_miracle.mp3");
 const letters=document.getElementById("letters");
 const result=document.getElementById("result");
 const mobileInput=document.getElementById("mobileInput");
+const scorecardText=document.getElementById("scorecardText");
+
+const BEST_SCORE_KEY="az-speed-best-score";
+const BEST_NAME_KEY="az-speed-best-name";
+
+let bestScore=Number(localStorage.getItem(BEST_SCORE_KEY));
+let bestName=localStorage.getItem(BEST_NAME_KEY)||"";
 
 function playSound(sound){
     sound.pause();
@@ -94,6 +115,14 @@ function render(){
         else if(i===index)s.className="current";
         letters.appendChild(s);
     });
+}
+
+function updateScorecard(){
+    if(bestScore===null || !bestName){
+        scorecardText.textContent="No record yet";
+    } else {
+        scorecardText.textContent=`${bestName} holds the fastest time at ${bestScore.toFixed(3)} s`;
+    }
 }
 
 function restartGame(){
@@ -130,7 +159,9 @@ function handleKey(key){
         render();
 
         if(index===26){
-            const time=((performance.now()-startTime)/1000).toFixed(3);
+            const timeValue=((performance.now()-startTime)/1000);
+            const time=timeValue.toFixed(3);
+            const isNewRecord=bestScore===null || timeValue<bestScore;
 
             if(mistakes===0) playSound(miracle);
             else playSound(finishSound);
@@ -138,6 +169,17 @@ function handleKey(key){
             result.innerHTML=
             "🎉 Finished!<br>Time: <b>"+time+
             "</b> seconds<br>Mistakes: <b>"+mistakes+"</b>";
+
+            if(isNewRecord){
+                const enteredName=prompt("New fastest fingers! Enter your name:","Player");
+                const name=(enteredName||"Anonymous").trim() || "Anonymous";
+                bestScore=timeValue;
+                bestName=name;
+                localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+                localStorage.setItem(BEST_NAME_KEY, bestName);
+                updateScorecard();
+                result.innerHTML += "<br><br><b>New record!</b><br>Fastest fingers: <b>"+name+"</b>";
+            }
 
             started=false;
         }
@@ -174,6 +216,7 @@ function activate(){
 document.addEventListener("touchstart",activate,{passive:true});
 document.addEventListener("click",activate);
 
+updateScorecard();
 render();
 </script>
 
