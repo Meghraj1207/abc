@@ -1,69 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App Gallery</title>
-    <meta
-      name="description"
-      content="A polished GitHub Pages portfolio showcasing games, tools, and experiments."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="aurora aurora-one"></div>
-    <div class="aurora aurora-two"></div>
-    <div class="aurora aurora-three"></div>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A-Z Speed Test</title>
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:#fff;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    text-align:center;
+}
+.box{max-width:700px;padding:20px}
+#letters{font-size:32px;letter-spacing:3px;margin:20px 0;word-break:break-word}
+.current{color:#00ff66;text-decoration:underline}
+.done{color:#666}
+#result{font-size:24px;margin:20px 0}
+button{
+    padding:12px 22px;
+    font-size:18px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+#mobileInput{
+    position:fixed;
+    left:-9999px;
+    opacity:0;
+    width:1px;
+    height:1px;
+}
+</style>
+</head>
+<body>
 
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero__copy">
-          <p class="eyebrow">🚀 Meghraj's Lab</p>
-          <h1>Games, tools, and experiments in one polished hub.</h1>
-          <p class="hero__text">
-            Browse interactive projects, launch apps instantly, and discover new
-            experiments built for GitHub Pages.
-          </p>
-          <div class="hero__actions">
-            <button class="action-btn action-btn--primary" id="random-btn">
-              🎲 Surprise Me
-            </button>
-            <a class="action-btn action-btn--ghost" href="#gallery">Explore Gallery</a>
-          </div>
-        </div>
-        <div class="hero__stats">
-          <div class="stat-card">
-            <strong id="project-count">0</strong>
-            <span>Projects</span>
-          </div>
-          <div class="stat-card">
-            <strong>∞</strong>
-            <span>Creative ideas</span>
-          </div>
-          <div class="stat-card">
-            <strong>100%</strong>
-            <span>GitHub Pages ready</span>
-          </div>
-        </div>
-      </header>
-      
-      <section class="toolbar" id="gallery">
-        <label class="search-bar" for="search">
-          <span>🔍</span>
-          <input id="search" type="search" placeholder="Search apps..." />
-        </label>
-        <div class="filter-chips" id="filter-chips"></div>
-      </section>
+<div class="box">
+<h1>A → Z Speed Test</h1>
+<p>Tap anywhere, then press <b>A</b> to start.</p>
 
-      <section class="gallery" id="gallery-grid" aria-label="Project gallery"></section>
-    </div>
+<div id="letters"></div>
 
-    <script src="script.js"></script>
-  </body>
+<div id="result">
+Time: 0.000 s<br>
+Mistakes: 0
+</div>
+
+<button onclick="restartGame()">Restart</button>
+
+<p>Desktop: Press Enter to restart.</p>
+</div>
+
+<input id="mobileInput"
+autocomplete="off"
+autocorrect="off"
+autocapitalize="off"
+spellcheck="false"
+inputmode="text">
+
+<script>
+const alphabet="abcdefghijklmnopqrstuvwxyz".split("");
+
+let index=0;
+let started=false;
+let startTime=0;
+let mistakes=0;
+
+const rightSound=new Audio("fahhhhh.mp3");
+const wrongSound=new Audio("Ye Le Meme.mp3");
+const finishSound=new Audio("screaming_chicken_loud.mp3");
+const miracle=new Audio("akshay_kumar_miracle.mp3");
+
+const letters=document.getElementById("letters");
+const result=document.getElementById("result");
+const mobileInput=document.getElementById("mobileInput");
+
+function playSound(sound){
+    sound.pause();
+    sound.currentTime=0;
+    sound.play().catch(()=>{});
+}
+
+function render(){
+    letters.innerHTML="";
+    alphabet.forEach((c,i)=>{
+        const s=document.createElement("span");
+        s.textContent=c+" ";
+        if(i<index)s.className="done";
+        else if(i===index)s.className="current";
+        letters.appendChild(s);
+    });
+}
+
+function restartGame(){
+    index=0;
+    started=false;
+    mistakes=0;
+    result.innerHTML="Time: 0.000 s<br>Mistakes: 0";
+    render();
+    mobileInput.value="";
+    mobileInput.focus();
+}
+
+function handleKey(key){
+    key=key.toLowerCase();
+
+    if(key==="enter"){
+        restartGame();
+        return;
+    }
+
+    if(key.length!==1 || key<'a' || key>'z') return;
+
+    if(!started){
+        if(key!=="a") return;
+        started=true;
+        startTime=performance.now();
+    }
+
+    if(key===alphabet[index]){
+
+        if(index!==25) playSound(wrongSound);
+
+        index++;
+        render();
+
+        if(index===26){
+            const time=((performance.now()-startTime)/1000).toFixed(3);
+
+            if(mistakes===0) playSound(miracle);
+            else playSound(finishSound);
+
+            result.innerHTML=
+            "🎉 Finished!<br>Time: <b>"+time+
+            "</b> seconds<br>Mistakes: <b>"+mistakes+"</b>";
+
+            started=false;
+        }
+
+    }else{
+        mistakes++;
+        playSound(rightSound);
+        result.innerHTML="Time: "+(started?((performance.now()-startTime)/1000).toFixed(3):"0.000")+" s<br>Mistakes: "+mistakes;
+    }
+
+    mobileInput.focus();
+}
+
+// Desktop
+document.addEventListener("keydown",(e)=>{
+    handleKey(e.key);
+});
+
+// Mobile
+mobileInput.addEventListener("beforeinput",(e)=>{
+    if(!e.data)return;
+    e.preventDefault();
+    handleKey(e.data);
+});
+
+mobileInput.addEventListener("input",()=>{
+    mobileInput.value="";
+});
+
+// One tap required by browsers
+function activate(){
+    mobileInput.focus();
+}
+document.addEventListener("touchstart",activate,{passive:true});
+document.addEventListener("click",activate);
+
+render();
+</script>
+
+</body>
 </html>
