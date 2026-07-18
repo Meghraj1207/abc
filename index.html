@@ -34,6 +34,17 @@ body{
     font-size:24px;
     margin-top:20px;
 }
+    #mobileInput{
+    width:320px;
+    max-width:90%;
+    padding:12px;
+    font-size:24px;
+    text-align:center;
+    border-radius:8px;
+    border:none;
+    outline:none;
+    margin-top:20px;
+}
 </style>
 </head>
 <body>
@@ -50,6 +61,14 @@ body{
 Time: 0.000 s<br>
 Mistakes: 0
 </div>
+<input
+    type="text"
+    id="mobileInput"
+    placeholder="Tap here then type A → Z"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false">
 
 <p>Press Enter to restart.</p>
 
@@ -65,9 +84,22 @@ let mistakes=0;
 const rightSound = new Audio("fahhhhh.mp3");
 const wrongSound = new Audio("Ye Le Meme.mp3");
 const finishSound = new Audio("screaming_chicken_loud.mp3");
+const miracle = new Audio("akshay_kumar_miracle.mp3");
 const letters=document.getElementById("letters");
 const result=document.getElementById("result");
+const mobileInput=document.getElementById("mobileInput");
 
+window.addEventListener("load",()=>{
+    mobileInput.focus();
+});
+
+document.body.addEventListener("click",()=>{
+    mobileInput.focus();
+});
+
+document.body.addEventListener("touchstart",()=>{
+    mobileInput.focus();
+});
 function render(){
     letters.innerHTML="";
     alphabet.forEach((c,i)=>{
@@ -87,7 +119,7 @@ function playSound(sound){
 }
 render();
 
-document.addEventListener("keydown",(e)=>{
+mobileInput.addEventListener("keydown",(e)=>{
 
     const key=e.key.toLowerCase();
 
@@ -116,7 +148,11 @@ document.addEventListener("keydown",(e)=>{
         render();
 
         if(index===26){
-            playSound(finishSound);
+            if(mistake==0){
+                playSound(miracle);
+            }else{
+                playSound(finishSound);
+            }
             const time=((performance.now()-startTime)/1000).toFixed(3);
             result.innerHTML=`🎉 Finished!<br>Time: <b>${time}</b> seconds<br>Mistakes: <b>${mistakes}</b>`;
             started=false;
@@ -127,6 +163,8 @@ document.addEventListener("keydown",(e)=>{
         playSound(rightSound);
         result.innerHTML=`Mistakes: ${mistakes}`;
     }
+    mobileInput.value="";
+    mobileInput.focus();
 
 });
 </script>
