@@ -151,17 +151,19 @@ function handleKey(key){
     mobileInput.focus();
 }
 
-// Desktop
-document.addEventListener("keydown",(e)=>{
-    handleKey(e.key);
-});
+const isTouch = navigator.maxTouchPoints > 0;
 
-// Mobile
-mobileInput.addEventListener("beforeinput",(e)=>{
-    if(!e.data)return;
-    e.preventDefault();
-    handleKey(e.data);
-});
+if (isTouch) {
+    mobileInput.addEventListener("beforeinput", (e) => {
+        if (!e.data) return;
+        e.preventDefault();
+        handleKey(e.data);
+    });
+} else {
+    document.addEventListener("keydown", (e) => {
+        handleKey(e.key);
+    });
+}
 
 mobileInput.addEventListener("input",()=>{
     mobileInput.value="";
