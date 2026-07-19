@@ -559,7 +559,7 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function shareScore() {
   const score = el.shareBtn.dataset.score;
   const url = "https://meghraj1207.github.io/abc/"
-  const text = `I completed A-Z speed test!\n\n${score}\n\nCan you beat me?\n${url}\n click and beat me\`;
+  const text = `I completed A-Z speed test!\n\n${score}\n\nCan you beat me?\n${url}\n click and beat me`;
   
   if (navigator.share) {
     navigator.share({ title: 'A-Z Speed Test', text: text }).catch(console.error);
